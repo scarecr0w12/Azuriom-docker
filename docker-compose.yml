@@ -3,7 +3,7 @@ services:
   # PHP Service
   app:
     build:
-      context: ./docker/php-fpm
+      dockerfile: ./docker/php-fpm/Dockerfile
       args:
         uid: 1000
         user: azuriom
@@ -16,7 +16,8 @@ services:
         condition: service_healthy
   #Nginx Service
   nginx:
-    image: nginx:alpine
+    build: 
+      dockerfile: ./docker/nginx/Dockerfile
     container_name: azuriom-webserver
     restart: unless-stopped
     ports:
