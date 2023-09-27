@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  # PHP Service
+  app:
+    build:
+      context: ./docker/php-fpm
+      args:
+        uid: 1000
+        user: azuriom
+    image: azuriom/php-fpm
+    working_dir: /var/www
+    networks:
+      - azuriom
+    depends_on:
+      mysql:
+        condition: service_healthy
+  #Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: azuriom-webserver
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - app
+    networks:
+      - azuriom
+  # MySQL Service
+  mysql:
+    image: mysql/mysql-server:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: ${DB_DATABASE}
+    volumes:
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+      interval: 5s
+      retries: 10
+    networks:
+      - azuriom
+# Volumes
+volumes:
+  mysqldata:
+networks:
+  azuriom:
+    driver: bridge
