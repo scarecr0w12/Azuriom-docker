@@ -3,6 +3,7 @@ services:
   # PHP Service
   app:
     build:
+      context: .
       dockerfile: ./docker/php-fpm/Dockerfile
       args:
         uid: 1000
@@ -16,17 +17,34 @@ services:
         condition: service_healthy
   #Nginx Service
   nginx:
-    build: 
+    build:
+      context: .
       dockerfile: ./docker/nginx/Dockerfile
+      args:
+        - DOMAIN=${APP_DOMAIN}
     container_name: azuriom-webserver
     restart: unless-stopped
     ports:
       - 80:80
       - 443:443
+    env_file: .env
+    volumes:
+      - data:/var/www/html
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
     depends_on:
       - app
     networks:
       - azuriom
+  certbot:
+    image: certbot/certbot:latest
+    command: certonly -v --keep --non-interactive --register-unsafely-without-email --agree-tos --no-eff-email --duplicate --expand --webroot -w=/etc/letsencrypt --cert-name ${APP_DOMAIN} -d ${APP_DOMAIN}
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+    env_file: .env
+    depends_on:
+      - nginx
   # MySQL Service
   mysql:
     image: mysql/mysql-server:8.0
@@ -37,6 +55,7 @@ services:
       MYSQL_DATABASE: ${DB_DATABASE}
     volumes:
       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+      - ./docker/mysql/my.cnf:/etc/my.cnf
       - mysqldata:/var/lib/mysql
     healthcheck:
       test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
@@ -44,9 +63,21 @@ services:
       retries: 10
     networks:
       - azuriom
+    expose:
+      - 3306
+    ports:
+      - 3306:3306
+  # Redis Service
+  redis:
+    image: redis:alpine
+    networks:
+      - azuriom
+    expose:
+      - 6379
 # Volumes
 volumes:
   mysqldata:
+  data:
 networks:
   azuriom:
     driver: bridge
