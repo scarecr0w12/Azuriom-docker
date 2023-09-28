@@ -1,17 +1,25 @@
 FROM dockette/nodejs:v16 as frontend
-CMD mkdir -p /app
 WORKDIR /app
 COPY ./Azuriom/package.json ./
 RUN npm install
-COPY ./Azuriom/webpack.mix.js ./
-COPY ./Azuriom/resources/ ./resources/
-COPY ./Azuriom/public/ ./public/
+COPY ./Azuriom/ ./
 RUN npm run prod
 
-FROM composer:latest as composer_build
+FROM php:8.2-cli AS setup
+# Install dependencies
 WORKDIR /app
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions pdo pdo_mysql zip intl opcache bcmath redis xml xmlwriter curl mbstring ctype json openssl tokenizer
+
+# Copy the Laravel application code
 COPY ./Azuriom/composer.json ./
-RUN composer install --no-dev --no-autoloader --no-scripts --ignore-platform-reqs
+# Install Composer dependencies
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    composer install --no-scripts --no-autoloader
 COPY ./Azuriom/ ./
 RUN composer install --no-dev --optimize-autoloader
 
@@ -25,8 +33,13 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo pdo_mysql zip intl opcache bcmath redis xml xmlwriter curl mbstring ctype json openssl tokenizer
 
 WORKDIR /var/www/html/
-
-COPY --chown=www-data --from=composer_build /app/ ./
+COPY --chown=www-data --from=setup /app/ ./
 COPY --from=frontend /app/ ./
+COPY ./.env ./.env
+RUN php artisan key:generate
+RUN if [ ! -f ./database/migration_flag ]; then \
+      php artisan migrate --seed && \
+      touch ./database/migration_flag; \
+   fi
 RUN php artisan view:cache
 CMD ["php-fpm", "-F"]

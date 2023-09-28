@@ -1,20 +1,32 @@
-FROM nginx:latest
+FROM nginx:1.19
+
+# Copy nginx configuration files
 COPY ./docker/nginx/azuriom.conf /etc/nginx/conf.d/default.conf
 COPY ./docker/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./.env /var/www/html/.env
+
+# Set the DOMAIN argument and replace placeholder in the default.conf
 ARG DOMAIN
-RUN sed -i -e 's/placeholder/'"${DOMAIN}"'/g' /etc/nginx/conf.d/default.conf
-WORKDIR /var/www/html
+RUN sed -i -e 's/placeholder/'"$DOMAIN"'/g' /etc/nginx/conf.d/default.conf
+
+# Create log files
 RUN touch /var/www/error.log
 RUN touch /var/www/access.log
-#RUN groupadd -g 1000 nginx
-#RUN useradd -u 1000 -ms /bin/bash -g nginx nginx
+
 # Copy existing application directory permissions
-COPY --from=azuriom/php-fpm /var/www/html/ ./
+COPY --from=azuriom/php-fpm /var/www/html/ /var/www/html/
 RUN chown -R nginx:nginx /var/www/html
+
+# Set more restrictive permissions
+RUN find /var/www/html -type d -exec chmod 755 {} \;
+RUN find /var/www/html -type f -exec chmod 644 {} \;
+
+# Set storage and bootstrap/cache directory permissions
 RUN chmod -R 777 /var/www/html/storage/
 RUN chmod -R 777 /var/www/html/bootstrap/cache/
+
+# Set nginx directory permissions
 RUN chgrp -R nginx /var/cache/nginx /var/run /var/log/nginx && \
     chmod -R 770 /var/cache/nginx /var/run /var/log/nginx
-#RUN echo 'pid /tmp/nginx.pid' >> /etc/nginx/nginx.conf
+
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
