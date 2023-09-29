@@ -3,8 +3,7 @@ FROM mysql/mysql-server:8.0
 
 RUN chown -R mysql:root /var/lib/mysql/
 RUN chmod -R 775 /var/lib/mysql/
-RUN chown mysql:mysql /var/run/mysqld/
-RUN chmod 777 /var/run/mysqld/
+COPY ./docker/mysql/init.sql /docker-entrypoint-initdb.d/init.sql
 
 ARG MYSQL_DATABASE
 ARG MYSQL_USER
@@ -15,7 +14,5 @@ ENV MYSQL_DATABASE=$MYSQL_DATABASE
 ENV MYSQL_USER=$MYSQL_USER
 ENV MYSQL_PASSWORD=$MYSQL_PASSWORD
 ENV MYSQL_ROOT_PASSWORD=$MYSQL_PASSWORD
-ENV BIND_ADDRESS=192.168.0.4
 
-EXPOSE 3306
 CMD ["mysqld"]

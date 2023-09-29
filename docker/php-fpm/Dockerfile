@@ -30,6 +30,12 @@ RUN php artisan key:generate
 
 
 FROM php:8.2-fpm-alpine AS production
+RUN addgroup -g 1000 -S nginx && \
+    adduser -u 1000 -S nginx -G nginx
+COPY ./wait-for-mysql.sh /
+COPY ./seed.sh /
+RUN chmod +x /seed.sh
+RUN chmod +x /wait-for-mysql.sh
 COPY ./docker/php-fpm/php-ini-overrides.ini /usr/local/etc/php/conf.d/99-overrides.ini
 COPY ./docker/php-fpm/www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY ./docker/php-fpm/php-fpm.conf /usr/local/etc/php-fpm.conf
@@ -39,14 +45,16 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo pdo_mysql zip intl opcache bcmath redis xml xmlwriter curl mbstring ctype json openssl tokenizer
 RUN apk update && apk add mysql-client && rm -f /var/cache/apk/*
 
-WORKDIR /var/www/html/
-COPY --chown=www-data --from=setup /app/ ./
-COPY --from=frontend /app/ ./
-COPY ./docker/wait-for-mysql.sh /wait-for-mysql.sh
-RUN chmod +x /wait-for-mysql.sh
-RUN if [ ! -f ./database/migration_flag ]; then \
-      sh /wait-for-mysql.sh /var/lib/mysql/mysql.sock php artisan migrate --seed && \
-      touch ./database/migration_flag; \
-   fi
-RUN php artisan view:cache
-CMD ["php-fpm", "-F"]
+# Copy the Laravel application code
+RUN mkdir -p /var/www/html/storage && \
+    mkdir -p /var/www/html/bootstrap && \
+    mkdir -p /var/www/html/bootstrap/cache && \
+    chown -R nginx:nginx /var/www/html && \
+    chown -R nginx:nginx /var/www/html/storage && \
+    chown -R nginx:nginx /var/www/html/bootstrap && \
+    chown -R nginx:nginx /var/www/html/bootstrap/cache
+COPY --chown=nginx --from=setup /app/ /var/www/html/
+COPY --from=frontend /app/ /var/www/html/
+WORKDIR /var/www/html
+ENTRYPOINT ["/seed.sh"]
+CMD ["php-fpm", "-F", "-R"]
