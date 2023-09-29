@@ -9,11 +9,11 @@ ARG DOMAIN
 RUN sed -i -e 's/placeholder/'"$DOMAIN"'/g' /etc/nginx/conf.d/default.conf
 
 # Create log files
-RUN touch /var/www/error.log
-RUN touch /var/www/access.log
+#RUN touch /var/www/error.log
+#RUN touch /var/www/access.log
 
 # Copy existing application directory permissions
-COPY --from=azuriom/php-fpm /var/www/html/ /var/www/html/
+#COPY --from=azuriom/php-fpm /var/www/html/ /var/www/html/
 RUN chown -R nginx:nginx /var/www/html
 
 # Set more restrictive permissions

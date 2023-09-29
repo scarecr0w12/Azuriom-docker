@@ -1,8 +1,0 @@
-172.27.0.1 - - [28/Sep/2023:15:22:18 +0000] "GET /install/database HTTP/1.0" 200 21278 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:22:31 +0000] "GET /install/database HTTP/1.0" 200 21278 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:22:46 +0000] "POST /install/database HTTP/1.1" 302 386 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:22:46 +0000] "GET / HTTP/1.0" 200 19383 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:22:48 +0000] "GET /install/database HTTP/1.0" 200 21473 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:23:31 +0000] "GET /phpinfo.php HTTP/1.0" 200 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:23:41 +0000] "GET /phpinfo.php HTTP/1.0" 200 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-172.27.0.1 - - [28/Sep/2023:15:23:42 +0000] "GET /phpinfo.php HTTP/1.0" 200 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"

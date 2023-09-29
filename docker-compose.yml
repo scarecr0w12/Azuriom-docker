@@ -1,28 +1,67 @@
 version: '3.8'
 services:
+  # MySQL Service
+  mysql:
+    #image: mysql:8.0
+    build:
+      context: .
+      dockerfile: ./docker/mysql/Dockerfile
+      args:
+        MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+        MYSQL_USER: $DB_USERNAME
+        MYSQL_ROOT_HOST: "%"
+        MYSQL_PASSWORD: $DB_PASSWORD
+        MYSQL_DATABASE: $DB_DATABASE
+    image: azuriom/mysql
+    container_name: azuriom-mysql
+    command: mysqld --default-authentication-plugin=mysql_native_password --max_connections=1000 --log-error=/var/log/mysqld.log --pid-file=/var/run/mysqld/mysqld.pid --bind-address=192.168.0.4 --datadir=/var/lib/mysql --secure-file-priv=/var/lib/mysql-files --user=mysql --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+      MYSQL_USER: $DB_USERNAME
+      MYSQL_PASSWORD: $DB_PASSWORD
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: $DB_DATABASE
+    env_file: .env
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    healthcheck:
+      test: mysqladmin ping -h 192.168.0.4 -u root
+      interval: 5s
+      retries: 10
+    networks:
+      azuriom:
+        ipv4_address: 192.168.0.4
+    expose:
+      - 3306
+    ports:
+      - "3306:3306"
   # PHP Service
   app:
     build:
       context: .
       dockerfile: ./docker/php-fpm/Dockerfile
+      target: production
       args:
         uid: 1000
         user: azuriom
     image: azuriom/php-fpm
     working_dir: /var/www
+    volumes:
+      - data:/var/www/html
     networks:
       azuriom:
         ipv4_address: 192.168.0.2
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
   #Nginx Service
   nginx:
     build:
       context: .
       dockerfile: ./docker/nginx/Dockerfile
       args:
-        - DOMAIN=${APP_DOMAIN}
+        DOMAIN: $APP_DOMAIN
+    image: azuriom/nginx
     container_name: azuriom-webserver
     restart: unless-stopped
     ports:
@@ -37,41 +76,19 @@ services:
       - ./.env.example:/var/www/html/.env.example
     depends_on:
       - app
+      - mysql
     networks:
       azuriom:
         ipv4_address: 192.168.0.3
   certbot:
     image: certbot/certbot:latest
-    command: certonly -v --keep --non-interactive --register-unsafely-without-email --agree-tos --no-eff-email --duplicate --expand --webroot -w=/etc/letsencrypt --cert-name ${APP_DOMAIN} -d ${APP_DOMAIN}
+    command: certonly -v --keep --non-interactive --register-unsafely-without-email --agree-tos --no-eff-email --duplicate --expand --webroot -w=/etc/letsencrypt --cert-name $APP_DOMAIN -d $APP_DOMAIN
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/lib/letsencrypt:/var/lib/letsencrypt
     env_file: .env
     depends_on:
       - nginx
-  # MySQL Service
-  mysql:
-    image: mysql/mysql-server:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_ROOT_HOST: "%"
-      MYSQL_DATABASE: ${DB_DATABASE}
-    volumes:
-      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
-      - ./docker/mysql/my.cnf:/etc/my.cnf
-      - mysqldata:/var/lib/mysql
-    healthcheck:
-      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
-      interval: 5s
-      retries: 10
-    networks:
-      azuriom:
-        ipv4_address: 192.168.0.4
-    expose:
-      - 3306
-    ports:
-      - 3306:3306
   # Redis Service
   redis:
     image: redis:alpine
@@ -88,7 +105,9 @@ services:
 # Volumes
 volumes:
   mysqldata:
+    driver: local
   data:
+    driver: local
 networks:
   azuriom:
     driver: bridge
